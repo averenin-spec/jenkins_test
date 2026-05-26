@@ -1,0 +1,178 @@
+import java.nio.file.Files
+import java.nio.file.Paths
+
+def libvirt10_setup()
+{
+    sh """
+         rm -f /var/lib/libvirt/images/centos-10-stream.qcow2 && wget -qO /var/lib/libvirt/images/centos-10-stream.qcow2 https://cloud.centos.org/centos/10-stream/x86_64/images/CentOS-Stream-GenericCloud-10-latest.x86_64.qcow2 && virsh pool-refresh default
+       """
+}
+
+// Return a map of cloud providers and their possibilities/limitations
+def call()
+{
+    // Cloud providers and their limits & params.
+    def providers = [:]
+
+    providers['libvirt'] = ['maxjobs_smoke': 4, 'maxjobs_all': 4, 'testlevel': 'smoke', 'vers': ['rhel8', 'rhel9', 'rhel10', 'centos10'],
+			    'has_watchdog': true, 'has_storage': true, 'has_network': true, 'weekly': true, 'allprio': 1,
+			    'api_rate_limit': false,
+			    'defaultiscsi': '10',
+			    'defaultuseiscsi': 'no',
+			    'defaultblocksize': '200',
+			    'authopts': '--libvirtd-ip localhost',
+			    'rhel8': ['createopts': "--image rhel-8.10.0.x86_64.qcow2 --flavor-workstation rhelha-vapor-workstation-medium --flavor rhelha-vapor-node-medium",
+				      'deployopts':  '',
+				      'testopts': '',
+				      'setup_fn': {}],
+			    'rhel9': ['createopts': "--image rhel-9.7.0.x86_64.qcow2 --flavor-workstation rhelha-vapor-workstation-medium --flavor rhelha-vapor-node-medium",
+				      'deployopts':  '',
+				      'testopts': '',
+				      'setup_fn': {}],
+			    'rhel10': ['createopts': "--image rhel-10.1.0.x86_64.qcow2 --flavor-workstation rhelha-vapor-workstation-medium --flavor rhelha-vapor-node-medium",
+				       'deployopts':  '',
+				       'testopts': '',
+				       'setup_fn': {}],
+			    'centos10': ['createopts': "--image centos-10-stream.qcow2 --flavor-workstation rhelha-vapor-workstation-medium --flavor rhelha-vapor-node-medium",
+					 'deployopts':  '',
+					 'testopts': '',
+					 'setup_fn': {libvirt10_setup()} ]]
+
+    providers['osp'] = ['maxjobs_smoke': 8, 'maxjobs_all': 8, 'testlevel': 'all', 'vers': ['rhel8', 'rhel9'],
+			'has_watchdog': true, 'has_storage': true, 'has_network': true, 'weekly': true, 'allprio': 1,
+			'api_rate_limit': true,
+			'defaultiscsi': '200',
+			'defaultuseiscsi': 'yes',
+			'defaultblocksize': '10',
+			'authopts': '--cloud rhelha-ci',
+			'rhel8': ['createopts': '--image rhel-8.10.0.x86_64',
+				  'deployopts':  '',
+				  'testopts': '',
+				  'setup_fn': {}],
+			'rhel9': ['createopts': '--image rhel-9.7.0.x86_64',
+				  'deployopts':  '',
+				  'testopts': '',
+				  'setup_fn': {}]]
+
+    providers['azure'] = ['maxjobs_smoke': 4, 'maxjobs_all': 4, 'testlevel': 'smoke', 'vers': ['rhel8', 'rhel9', 'rhel10'],
+			  'has_watchdog': false, 'has_storage': true, 'has_network': true, 'weekly': true, 'allprio': 1,
+			  'api_rate_limit': true,
+			  'defaultiscsi': '',
+			  'defaultuseiscsi': 'no',
+			  'defaultblocksize': '1024',
+			  'authopts': '--region eastus',
+			  'rhel8': ['createopts': '--image $(az vm image list --all --publisher RedHat  --output table | grep "RedHat:RHEL:8_" | awk \'{print $NF}\' | sort -V | tail -n 1)',
+				    'deployopts':  '',
+				    'testopts': '',
+				    'setup_fn': {}],
+			  'rhel9': ['createopts': '--image $(az vm image list --all --publisher RedHat  --output table | grep "RedHat:RHEL:9_" | awk \'{print $NF}\' | sort -V | tail -n 1)',
+				    'deployopts':  '',
+				    'testopts': '',
+				    'setup_fn': {}],
+			  'rhel10': ['createopts': '--image $(az vm image list --all --publisher RedHat  --output table | grep "RedHat:RHEL:10_" | awk \'{print $NF}\' | sort -V | tail -n 1)',
+				     'deployopts':  '',
+				     'testopts': '',
+				     'setup_fn': {}]]
+
+    providers['aws'] = ['maxjobs_smoke': 4, 'maxjobs_all': 4, 'testlevel': 'smoke', 'vers': ['rhel8', 'rhel9', 'rhel10'],
+			'has_watchdog': false, 'has_storage': true, 'has_network': true, 'weekly': true, 'allprio': 1,
+			'api_rate_limit': true,
+			'defaultiscsi': '',
+			'defaultuseiscsi': 'no',
+			'defaultblocksize': '300',
+			'authopts': '--region us-east-2',
+			'rhel8': ['createopts': '--image $(vapor get-images aws --region us-east-2 | grep "RHEL-8.10.0_HVM-" | grep x86_64 | sed -e \'s#",##g\' -e \'s#.*"##g\' | sort -u | tail -n 1)',
+				  'deployopts':  '',
+				  'testopts': '',
+				  'setup_fn': {}],
+			'rhel9': ['createopts': '--image $(vapor get-images aws --region us-east-2 | grep "RHEL-9.7.0_HVM_GA" | grep x86_64 | sed -e \'s#",##g\' -e \'s#.*"##g\' | sort -u | tail -n 1)',
+				  'deployopts':  '',
+				  'testopts': '',
+				  'setup_fn': {}],
+			'rhel10': ['createopts': '--image $(vapor get-images aws --region us-east-2 | grep "RHEL-10.1.0_HVM_GA" | grep x86_64 | sed -e \'s#",##g\' -e \'s#.*"##g\' | sort -u | tail -n 1)',
+				   'deployopts':  '',
+				   'testopts': '',
+				   'setup_fn': {}]]
+
+    providers['gcp'] = ['maxjobs_smoke': 4, 'maxjobs_all': 4, 'testlevel': 'smoke', 'vers': ['rhel8', 'rhel9', 'rhel10'],
+			'has_watchdog': false, 'has_storage': true, 'has_network': true, 'weekly': true, 'allprio': 1,
+			'api_rate_limit': true,
+			'defaultiscsi': '200',
+			'defaultuseiscsi': 'yes',
+			'defaultblocksize': '',
+			'authopts': '--region us-east1',
+			'rhel8': ['createopts': '--image $(gcloud compute images list --filter=rhel-8-v | grep "^rhel-8-v" | awk \'{print $1}\' | sort -V | tail -n 1)',
+				  'deployopts':  '',
+				  'testopts': '',
+				  'setup_fn': {}],
+			'rhel9': ['createopts': '--image $(gcloud compute images list --filter=rhel-9-v | grep "^rhel-9-v" | awk \'{print $1}\' | sort -V | tail -n 1)',
+				  'deployopts':  '',
+				  'testopts': '',
+				  'setup_fn': {}],
+			'rhel10': ['createopts': '--image $(gcloud compute images list --filter=rhel-10-v | grep "^rhel-10-v" | awk \'{print $1}\' | sort -V | tail -n 1)',
+				  'deployopts':  '',
+				  'testopts': '',
+				  'setup_fn': {}]]
+
+    providers['aliyun'] = ['maxjobs_smoke': 4, 'maxjobs_all': 4, 'testlevel': 'smoke', 'vers': ['rhel8', 'rhel9', 'rhel10'],
+			   'has_watchdog': false, 'has_storage': true, 'has_network': true, 'weekly': true, 'allprio': 1,
+			   'api_rate_limit': true,
+			   'defaultiscsi': '200',
+			   'defaultuseiscsi': 'no',
+			   'defaultblocksize': '512',
+			   'authopts': '--region us-east-1',
+			   'rhel8': ['createopts': '--image rhel-8.10.0.x86_64',
+				     'deployopts':  '',
+				     'testopts': '',
+				     'setup_fn': {}],
+			   'rhel9': ['createopts': '--image rhel-9.7.0.x86_64',
+				     'deployopts':  '',
+				     'testopts': '',
+				     'setup_fn': {}],
+			   'rhel10': ['createopts': '--image rhel-10.1.x86_64',
+				      'deployopts':  '',
+				      'testopts': '',
+				      'setup_fn': {}]]
+
+    providers['ocpv'] = ['maxjobs_smoke': 4, 'maxjobs_all': 0, 'testlevel': 'all', 'vers': ['rhel8', 'rhel9', 'rhel10', 'centos10'],
+			 'has_watchdog': true, 'has_storage': true, 'has_network': true, 'weekly': true, 'allprio': 0,
+			 'api_rate_limit': false,
+			 'defaultiscsi': '10',
+			 'defaultuseiscsi': 'no',
+			 'defaultblocksize': '200',
+			 'authopts': '',
+			 'rhel8': ['createopts': '--flavor-workstation u1.2xlarge --flavor u1.2xlarge --block-emulation-type scsi --image rhel-8.10.0',
+				   'deployopts':  '',
+				   'testopts': '',
+				   'setup_fn': {}],
+			 'rhel9': ['createopts': '--flavor-workstation u1.2xlarge --flavor u1.2xlarge --block-emulation-type scsi --image rhel-9.7.0',
+				   'deployopts':  '',
+				   'testopts': '',
+				   'setup_fn': {}],
+			 'rhel10': ['createopts': '--flavor-workstation u1.2xlarge --flavor u1.2xlarge --block-emulation-type scsi --image rhel-10.1.0',
+				    'deployopts':  '',
+				    'testopts': '',
+				    'setup_fn': {}],
+			 'centos10': ['createopts': '--flavor-workstation u1.2xlarge --flavor u1.2xlarge --block-emulation-type scsi --image centos-10-stream',
+				      'deployopts':  '',
+				      'testopts': '',
+				      'setup_fn': {}]]
+
+    providers['ibmvpc'] = ['maxjobs_smoke': 4, 'maxjobs_all': 4, 'testlevel': 'smoke', 'vers': ['rhel8', 'rhel9'],
+			   'has_watchdog': false, 'has_storage': false, 'has_network': false, 'weekly': true, 'allprio': 1,
+			   'api_rate_limit': true,
+			   'defaultiscsi': '200',
+			   'defaultuseiscsi': 'yes',
+			   'defaultblocksize': '10',
+			   'authopts': '--region us-east',
+			   'rhel8': ['createopts': '--image $(vapor get-images ibmvpc --region us-east | jq --raw-output \'.[] | select ( .name | contains("ibm-redhat-8-10-minimal-amd64") ).name\' | sort -V | tail -n 1)',
+				     'deployopts':  '',
+				     'testopts': '',
+				     'setup_fn': {}],
+			   'rhel9': ['createopts': '--image $(vapor get-images ibmvpc --region us-east | jq --raw-output \'.[] | select ( .name | contains("ibm-redhat-9-6-minimal-amd64") ).name\' | sort -V | tail -n 1)',
+				     'deployopts':  '',
+				     'testopts': '',
+				     'setup_fn': {}]]
+
+    return providers
+}

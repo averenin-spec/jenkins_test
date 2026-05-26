@@ -1,0 +1,67 @@
+// Jenkinsfile for ha-functional-testing-weekly CI project
+
+@Library(['GlobalLib', 'VaporLib', 'ProjectLib']) _
+
+// Globals
+def project = 'ha-functional-testing-weekly'
+def info = ['project': project, 'branch': '']
+
+pipeline {
+    agent { label 'built-in' }
+
+    parameters {
+	string(name: 'tests', defaultValue: 'all', description: '"all"/"smoke"')
+	string(name: 'dryrun', defaultValue: '0', description: 'set to 1 to see what the pipeline would do, without actually doing anything')
+	string(name: 'failure_rate', defaultValue: '0', description: 'Failure likelihood (0-100) to inject for testing')
+	string(name: 'provider', defaultValue: 'all', description: 'List of providers ro run test on (or "all")')
+    }
+
+    stages {
+	stage('Initialisation') {
+	    steps {
+		getBuildInfoCommon(info)
+	    }
+	}
+	stage('Collect & run tests') {
+	    steps {
+		script {
+		    def (Map smokeruns, Map faillist) = genTestBuilds('smoke', params.provider, params.dryrun, info, [:])
+		    stage('Smoke tests') {
+			try {
+			    parallel smokeruns
+			} catch (err) {
+			    println("Jenkinsfile caught "+err)
+			    info['exception_text'] += "\nparallel error caught in smoke tests: {$err}\n"
+			}
+		    }
+		    if (params.tests == 'all') {
+			def (Map allruns, Map _notused) = genTestBuilds('all', params.provider, params.dryrun, info, faillist)
+			stage('All tests') {
+			    try {
+				parallel allruns
+			    } catch (err) {
+				println("Jenkinsfile caught "+err)
+				info['exception_text'] += "\nparallel error caught in all tests: {$err}\n"
+			    }
+			}
+		    }
+		    // Sort the failure reports
+		    info['stages_fail_nodes'] = sortTestReports(info['stages_fail_nodes'])
+		}
+	    }
+	}
+    }
+    post {
+	success {
+	    script {
+		projectFinishUp(info)
+	    }
+	}
+	failure {
+	    script {
+		info['state'] = 'failure'
+		projectFinishUp(info)
+	    }
+	}
+    }
+}

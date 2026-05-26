@@ -1,0 +1,66 @@
+// Update ci-tools (and other things) on all the nodes
+
+@Library(['GlobalLib', 'GithubLib', 'ProjectLib']) _
+
+def info = [:]
+def project = 'update-all-ci-tools'
+
+// Generate the run-list
+def buildFullRunMap(Map info)
+{
+    def collectBuildEnv = [:]
+    def nodeList = getUpNodesByLabel('')
+
+    // It also needs to run on the Jenkins node
+    nodeList += 'built-in'
+    for (def n in nodeList) {
+	def node = n
+	collectBuildEnv[node] = {
+	    updateCiNode(node, info)
+	}
+    }
+
+    return collectBuildEnv
+}
+
+pipeline {
+    agent { label 'built-in' }
+
+    parameters {
+	string(name: 'reinstall',   defaultValue: '0', description: 'Clean out and do a fresh checkout of ci-tools')
+    }
+
+    stages {
+        stage('update ci-tools') {
+            steps {
+		script {
+		    info['project'] = project
+		    getBuildInfoCommon(info)
+		    info['state'] = 'success'
+		    info['branch'] = ''
+		    info['stages_run'] = 0
+		    info['stages_fail'] = 0
+		    info['stages_fail_nodes'] = ''
+
+		    // Now do all of the other nodes
+		    def updates = buildFullRunMap(info)
+		    try {
+			parallel updates
+			info['state'] = 'completed'
+		    } catch (err) {
+			println("Jenkinsfile caught "+err)
+			info['exception_text'] += "\nparallel error caught: {$err}\n"
+			info['state'] = 'error'
+		    }
+		}
+	    }
+        }
+    }
+
+    // Finish up and send emails
+    post {
+	always {
+	    projectFinishUp(info)
+	}
+    }
+}
