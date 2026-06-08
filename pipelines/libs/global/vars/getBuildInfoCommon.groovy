@@ -2,6 +2,8 @@
 // This is called at the end of a provider-specific getBuildInfo.groovy
 def call(Map info)
 {
+    println(">>> [COMMON] getBuildInfoCommon START")
+    println(">>> [COMMON] Received target = '${info['target']}'")
     // Clear things out ready for adding to by our groovy scripts
     info['nonvoting_fail'] = 0
     info['nonvoting_fail_nodes'] = ''
@@ -47,6 +49,8 @@ def call(Map info)
 	info['stableinstall'] = 0
 	info['publishrpm'] = 0
     }
+
+    println(">>> [COMMON] Returning target = '${info['target']}'")
 
     // If a global rebuild is in progress, then wait until it has finished.
     // Unless (of course) were are part of that global rebuild, or manually started.
