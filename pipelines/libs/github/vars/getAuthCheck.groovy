@@ -90,7 +90,7 @@ def call(Map params) {
 	    if (email_addrs != '') {
 		email_addrs += ','
 	    }
-	    email_addrs += 'commits@lists.kronosnet.org'
+	    email_addrs += 'averenin@redhat.com'
 	    mail to: email_addrs,
 		subject: "${env.BUILD_TAG} from user ${env.CHANGE_AUTHOR} - timeout-out waiting for admin response",
 		body: "see ${env.BUILD_URL}"
