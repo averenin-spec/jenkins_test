@@ -69,21 +69,6 @@ def call(String project, String upstream_repo, Map info)
 	info['branch'] = "PR-${env.cause}"
     } else {
 
-    println("DEBUG: ===== CHECKING info['target'] ASSIGNMENT =====")
-    println("DEBUG: BEFORE assignment:")
-    println("DEBUG:   env.BRANCH exists? ${env.BRANCH != null}")
-    println("DEBUG:   env.BRANCH value = '${env.BRANCH}'")
-    println("DEBUG:   env.BRANCH type = ${env.BRANCH?.getClass()}")
-
-	info['target'] = env.BRANCH
-
-    println("DEBUG: AFTER assignment:")
-    println("DEBUG:   info['target'] = '${info['target']}'")
-    println("DEBUG:   info['target'] type = ${info['target']?.getClass()}")
-    println("DEBUG:   info['target'] == null? ${info['target'] == null}")
-    println("DEBUG:   info['target'] is empty? ${info['target'] == ''}")
-    println("DEBUG: =============================================")
-
 	info['pull_id'] = '1'
 	if (env.cause == '') {
 	    info['checkout'] = env.BRANCH
@@ -109,6 +94,21 @@ def call(String project, String upstream_repo, Map info)
     // branches to build from Jenkins. This check avoid contributors pushing
     // to upstream_repo branch foo and have "free builds".
     // as for draft, we can only abort the pipeline.
+
+     println("DEBUG: ===== CHECKING info['target'] ASSIGNMENT =====")
+    println("DEBUG: BEFORE assignment:")
+    println("DEBUG:   env.BRANCH exists? ${env.BRANCH != null}")
+    println("DEBUG:   env.BRANCH value = '${env.BRANCH}'")
+    println("DEBUG:   env.BRANCH type = ${env.BRANCH?.getClass()}")
+
+	info['target'] = env.BRANCH
+
+    println("DEBUG: AFTER assignment:")
+    println("DEBUG:   info['target'] = '${info['target']}'")
+    println("DEBUG:   info['target'] type = ${info['target']?.getClass()}")
+    println("DEBUG:   info['target'] == null? ${info['target'] == null}")
+    println("DEBUG:   info['target'] is empty? ${info['target'] == ''}")
+    println("DEBUG: =============================================")
 
     info['tracking'] = isThisATrackingBranch(info['target'])
     if (info['tracking'] == false) {
