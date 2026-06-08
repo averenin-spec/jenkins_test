@@ -13,6 +13,7 @@ def call(String project, String upstream_repo, Map info)
     sh 'env|sort'
 
     // Fill in the common parts
+    env.BRANCH = 'main'
     getBuildInfoCommon(info)
 
     // Jenkins pipeline is configured as "This project is parametrized" and the envvars
@@ -30,7 +31,7 @@ def call(String project, String upstream_repo, Map info)
     //         for a PR is the PR number (1, 2...)
 
     // pagure specific
-    env.BRANCH = 'main'
+    
     def isPullRequest = env.BRANCH_TO != 'None' ? true : false
 
     info['isPullRequest'] = isPullRequest
