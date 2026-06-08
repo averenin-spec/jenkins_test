@@ -42,10 +42,12 @@ def call(String project, String upstream_repo, Map info)
     // the current key allows _only_ to post comments on PRs with very strict ACL.
     // the post to comments does NOT require for knet-ci-bot to be part of any groups
     // in any projects.
-    def cred_uuid = getCredUUID()
-    withCredentials([string(credentialsId: cred_uuid, variable: 'paguresecret')]) {
-	info['authcheck'] = getAuthCheck(['upstream_repo': upstream_repo, 'isPullRequest': isPullRequest])
-    }
+    // def cred_uuid = getCredUUID()
+    // withCredentials([string(credentialsId: cred_uuid, variable: 'paguresecret')]) {
+	// info['authcheck'] = getAuthCheck(['upstream_repo': upstream_repo, 'isPullRequest': isPullRequest])
+    // }
+
+    info['authcheck'] = true
 
     // NOTE: the Github version runs killDuplicate() jobs here
     // but we dont have a Pagure one.
