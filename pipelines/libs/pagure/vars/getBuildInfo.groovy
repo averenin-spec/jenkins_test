@@ -32,7 +32,7 @@ def call(String project, String upstream_repo, Map info)
 
     // pagure specific
     
-    def isPullRequest = env.BRANCH_TO != 'None' ? true : false
+    def isPullRequest = (env.BRANCH_TO != null && env.BRANCH_TO != 'None') ? true : false
 
     info['isPullRequest'] = isPullRequest
     info['project'] = project
