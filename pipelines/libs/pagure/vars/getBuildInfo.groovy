@@ -70,7 +70,8 @@ def call(String project, String upstream_repo, Map info)
     } else {
 
 	info['pull_id'] = '1'
-	if (env.cause == '') {
+	// FIX: Handle null/empty env.cause for manual builds
+	if (env.cause == null || env.cause == '') {
 	    info['checkout'] = env.BRANCH
 	} else {
 	    info['checkout'] = env.cause
