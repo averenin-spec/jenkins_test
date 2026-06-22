@@ -54,7 +54,7 @@ def call(Map info)
 	    // Random delay to stop hitting the server too hard
 	    sleep(new Random().nextInt(15))
 	    node('built-in') {
-		sh("scp /var/tmp/jenkins-sources/${tarfile} ${buildhost}:${workspace}/${info['project']}")
+		sh("scp /var/tmp/jenkins-sources/${tarfile} root@${buildhost}:${workspace}/${info['project']}")
 	    }
 	    sh "tar --no-same-owner -xzf ${tarfile}"
 	    sh "rm ${tarfile}"
